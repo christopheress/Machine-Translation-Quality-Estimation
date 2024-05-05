@@ -1,0 +1,42 @@
+version: '3.8'
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - TRANSQUEST_URL=http://transquest:8001
+      - OPENAI_GPT_URL=http://openai_gpt:8002
+      - COMETKIWI_URL=http://cometkiwi:8003
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - transquest
+      - openai_gpt
+
+  transquest:
+    build: ./transquest
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./transquest:/app
+
+  openai_gpt:
+    build: ./openai_gpt
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./openai_gpt:/app
+
+  cometkiwi:
+    build: ./cometkiwi
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HUGGINGFACE_TOKEN}
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./cometkiwi:/app

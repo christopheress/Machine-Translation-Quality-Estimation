@@ -1,0 +1,5 @@
+streamlit
+requests
+openpyxl
+nltk
+python-docx

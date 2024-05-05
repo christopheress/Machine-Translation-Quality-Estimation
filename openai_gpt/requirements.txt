@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pydantic
+requests
+openai==0.28

@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pydantic
+requests
+unbabel-comet>=2.2.0
