@@ -5,6 +5,7 @@ import os
 from io import BytesIO
 import pandas as pd
 import numpy as np
+import plotly.express as px
 from pathlib import Path
 from model_interface import TransQuestModel, OpenAIModel, CometKiwiModel
 from helper import load_text, prepare_sentence_pairs
@@ -247,35 +248,81 @@ with tab3:
     # Gruppierung der Einstellungen in einem Expander
     with st.expander("Einstellungen für die Analyse"):
         uploaded_files = st.file_uploader("Lade Excel-Dateien mit Ergebnissen hoch", type=['xlsx'], key='excel_upload', accept_multiple_files=True)
-        min_word_count = st.number_input("Mindestanzahl der Wörter pro Satz", min_value=1, value=5, step=1, key='min_word_count')
+        min_word_count = st.number_input("Mindestanzahl der Wörter pro Satz", min_value=1, value=1, step=1, key='min_word_count')
         exclude_extremes = st.checkbox("Extremwerte ausschließen", value=False, key='exclude_extremes')
         if exclude_extremes:
             extreme_percentile = st.slider("Prozentsatz der niedrigsten Scores, die ausgeschlossen werden sollen", min_value=0, max_value=10, value=5, step=1, key='extreme_percentile')
+        number_of_length_clusters = st.slider("Anzahl der Satzlängen-Cluster", min_value=2, max_value=10, value=4, step=1, key='length_clusters')
 
     if uploaded_files:
         all_results = []
         avg_scores_list = []
         sentence_scores = []
+        sentence_length_clusters = []
+        sentence_sets = []
+        cluster_info = []
 
         for uploaded_file in uploaded_files:
             temp_df = pd.read_excel(uploaded_file, engine='openpyxl')
             temp_df['Document'] = uploaded_file.name
-            temp_df = temp_df[temp_df['Source Text'].apply(lambda x: len(x.split()) >= min_word_count)]
+            temp_df['Word Count'] = temp_df['Source Text'].apply(lambda x: len(x.split()))
+            temp_df['Score'] = pd.to_numeric(temp_df['Score'], errors='coerce')  # Konvertiere die Score-Spalte in float
+            temp_df = temp_df[temp_df['Word Count'] >= min_word_count]
 
-            if exclude_extremes and 'extreme_percentile' in locals():
+            if exclude_extremes:
+                temp_df = temp_df.dropna(subset=['Score'])
                 cutoff_score = np.percentile(temp_df['Score'], extreme_percentile)
                 temp_df = temp_df[temp_df['Score'] > cutoff_score]
+
+            sentence_sets.append(set(temp_df['Source Text']))
+
+        # Finden der Schnittmenge aller Sätze, die in allen Dateien vorhanden sind
+        common_sentences = set.intersection(*sentence_sets)
+
+        for uploaded_file in uploaded_files:
+            temp_df = pd.read_excel(uploaded_file, engine='openpyxl')
+            temp_df = temp_df[temp_df['Source Text'].isin(common_sentences)]
+            temp_df['Document'] = uploaded_file.name
+            temp_df['Word Count'] = temp_df['Source Text'].apply(lambda x: len(x.split()))
+            temp_df['Score'] = pd.to_numeric(temp_df['Score'], errors='coerce')
 
             sentence_scores.append(temp_df[['Source Text', 'Score', 'Document']])
             avg_score_current_file = temp_df['Score'].mean()
             avg_scores_list.append({'Document': uploaded_file.name, 'Average Score': avg_score_current_file})
+
+            # Anwendung der Quantile-Einteilung und Speicherung der Cluster-Grenzen
+            quantiles, bins = pd.qcut(temp_df['Word Count'], q=number_of_length_clusters, retbins=True,
+                                      labels=[f'Cluster {i + 1}' for i in range(number_of_length_clusters)])
+            temp_df['Length Cluster'] = quantiles
+            sentence_length_clusters.append(temp_df[['Source Text', 'Score', 'Length Cluster', 'Document']])
             all_results.append(temp_df)
+
+            # Speichern der Cluster-Informationen
+            cluster_labels = [f'Cluster {i + 1}' for i in range(number_of_length_clusters)]
+            for i in range(len(bins) - 1):
+                cluster_info.append({'Cluster': cluster_labels[i], 'Min Words': bins[i], 'Max Words': bins[i + 1] - 1})
 
         combined_df = pd.concat(all_results, ignore_index=True)
         avg_score_df = pd.DataFrame(avg_scores_list)
+        length_cluster_df = pd.concat(sentence_length_clusters, ignore_index=True)
+        cluster_info_df = pd.DataFrame(cluster_info)
+
+        length_cluster_scores = length_cluster_df.pivot_table(index=['Source Text', 'Length Cluster'],
+                                                              columns='Document', values='Score',
+                                                              aggfunc='mean').reset_index()
+
+        # Bestimmung der besten Durchschnitte je Cluster und Dokument
+        best_count_per_cluster = length_cluster_scores.groupby('Length Cluster').apply(
+            lambda df: df.iloc[:, 1:].idxmax(axis=1).value_counts())
+        mean_scores_per_cluster = length_cluster_df.groupby(['Length Cluster', 'Document']).agg({'Score': 'mean'})
+
+        # Long to wide mean_scores_per_cluster
+        mean_scores_per_cluster = mean_scores_per_cluster.unstack(level=1)
+        mean_scores_per_cluster.columns = mean_scores_per_cluster.columns.droplevel(0)
+        mean_scores_per_cluster = mean_scores_per_cluster.reset_index()
 
         # Erstellen von Tabs für die verschiedenen Ergebnisanzeigen
-        tab1, tab2, tab3 = st.tabs(["Kombinierte und Durchschnittliche Ergebnisse", "Detaillierte Analysen", "Visualisierungen"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Kombinierte und Durchschnittliche Ergebnisse", "Detaillierte Analysen", "Visualisierungen", "Satzlängen-Analyse"])
 
         with tab1:
             st.subheader("Kombinierte Ergebnisse")
@@ -318,6 +365,35 @@ with tab3:
                 st.bar_chart(avg_score_df.set_index('Document'))
                 st.subheader("Beste Bewertungen je Quelle")
                 st.bar_chart(analysis_df.set_index('Document'))
+
+        with tab4:
+            # Checkbox, um zusätzliche Cluster-Informationen ein- oder auszublenden
+            show_info = st.checkbox("Cluster-Informationen anzeigen", value=False)
+            if show_info:
+                st.subheader("Satzlängen-Cluster-Informationen")
+                st.dataframe(cluster_info_df) 
+
+            # Untertitel und Darstellung der Durchschnittswerte nach Satzlänge
+            st.subheader("Analyse nach Satzlänge")
+            st.dataframe(mean_scores_per_cluster)
+
+            # Erstellung eines Balkendiagramms zur Visualisierung der Durchschnittswerte mit Plotly
+            fig = px.bar(mean_scores_per_cluster, x='Length Cluster',
+                         y=[col for col in mean_scores_per_cluster.columns if col != 'Length Cluster'],
+                         barmode='group', title="Average Scores by Document and Cluster")
+            st.plotly_chart(fig, use_container_width=True)
+
+            # Untertitel für die Analyse der besten Scores je Cluster
+            st.subheader("Häufigkeit des besten Inputs je Cluster")
+            st.table(best_count_per_cluster)
+
+            # Untertitel für die Darstellung der besten Bewertungen je Cluster
+            st.subheader("Beste Bewertungen je Cluster")
+            best_count_per_cluster = best_count_per_cluster.reset_index()
+            fig = px.bar(best_count_per_cluster, x='Length Cluster',
+                         y=[col for col in best_count_per_cluster.columns if col != 'Length Cluster'],
+                         barmode='group', title="Best Count per Cluster")
+            st.plotly_chart(fig, use_container_width=True)
 
     else:
         st.warning("Keine Dateien zum Analysieren gefunden. Bitte lade mindestens eine Datei hoch.")

@@ -3,3 +3,4 @@ requests
 openpyxl
 nltk
 python-docx
+plotly
