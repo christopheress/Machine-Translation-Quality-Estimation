@@ -21,14 +21,11 @@ def split_into_sentences(text, language='german'):
     """Nutzt NLTK, um Text in Sätze aufzuteilen."""
     return sent_tokenize(text, language=language)
 
-def prepare_sentence_pairs(source_paragraphs, target_paragraphs, source_language='german', target_language='english'):
+def prepare_sentence_pairs(source_paragraphs, target_paragraphs, source_language='german', target_language='english', min_words=1):
     all_sentence_pairs = []
     for source_text, target_text in zip(source_paragraphs, target_paragraphs):
         source_sentences = split_into_sentences(source_text, language=source_language)
         target_sentences = split_into_sentences(target_text, language=target_language)
-        if len(source_sentences) == len(target_sentences):
-            all_sentence_pairs.extend(zip(source_sentences, target_sentences))
-        else:
-            # Optional: Fehlerbehandlung oder Logik zur besseren Anpassung hinzufügen
-            pass
+        filtered_sentence_pairs = [(src, tgt) for src, tgt in zip(source_sentences, target_sentences) if len(src.split()) >= min_words]
+        all_sentence_pairs.extend(filtered_sentence_pairs)
     return all_sentence_pairs

@@ -1,6 +1,6 @@
 import pandas as pd
 import requests
-from model_interface import TransQuestModel, OpenAIModel, CometKiwiModel
+from frontend.model_interface import TransQuestModel, OpenAIModel, CometKiwiModel
 
 
 # Definition der Modell-URLs aus Umgebungsvariablen
@@ -12,9 +12,9 @@ model_urls = {
 
 # Modelle instanziieren
 models = {
-    #"transquest": TransQuestModel(model_urls["transquest"]),
+    "transquest": TransQuestModel(model_urls["transquest"]),
     #"openai_gpt": OpenAIModel(model_urls["openai_gpt"]),
-    "cometkiwi": CometKiwiModel(model_urls["cometkiwi"])
+    #"cometkiwi": CometKiwiModel(model_urls["cometkiwi"])
 }
 
 # Excel-Datei einlesen
@@ -71,7 +71,7 @@ def process_translation_evaluations(data, models):
 updated_data = process_translation_evaluations(data, models)
 
 # Ergebnisse in eine neue Excel-Datei speichern
-output_filename = '/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Testdaten_MTQE_result.xlsx'
+output_filename = '/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Testdaten_MTQE_result_tr.xlsx'
 updated_data.to_excel(output_filename, index=False)
 
 print(f'Die aktualisierte Excel-Datei wurde gespeichert: {output_filename}')

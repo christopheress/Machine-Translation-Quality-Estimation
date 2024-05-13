@@ -21,12 +21,14 @@ SAVE_DIR.mkdir(parents=True, exist_ok=True)  # Stellt sicher, dass das Verzeichn
 model_urls = {
     "transquest": os.getenv("TRANSQUEST_URL") + "/evaluate/",
     "openai_gpt": os.getenv("OPENAI_GPT_URL") + "/evaluate/",
+    "openai_gpt_error_detection": os.getenv("OPENAI_GPT_URL") + "/error_detection/",
     "cometkiwi": os.getenv("COMETKIWI_URL") + "/evaluate/"
 }
 
 models = {
     "transquest": TransQuestModel(model_urls["transquest"]),
     "openai_gpt": OpenAIModel(model_urls["openai_gpt"]),
+    "openai_gpt_error_detection": OpenAIModel(model_urls["openai_gpt_error_detection"]),
     "cometkiwi": CometKiwiModel(model_urls["cometkiwi"]),
 }
 
@@ -61,8 +63,9 @@ with tab1:
     uploaded_file_target = st.file_uploader("Lade die Zieldatei hoch", type=['txt', 'docx'], key='target_upload')
 
     # Spracheinstellungen hinzufügen
-    source_language = st.selectbox("Wähle die Quellsprache", ('german', 'english', 'spanish', 'french'), key='source_language')
-    target_language = st.selectbox("Wähle die Zielsprache", ('english', 'german', 'spanish', 'french'), key='target_language')
+    source_language = st.selectbox("Wähle die Quellsprache", ('german', 'english', 'spanish', 'french'), key='source_language_preprocess')
+    target_language = st.selectbox("Wähle die Zielsprache", ('english', 'german', 'spanish', 'french'), key='target_language_preprocess')
+    min_words = st.slider("Minimale Wortanzahl im Quelltext pro Satz", min_value=1, max_value=20, value=2, step=1, key='min_words_slider')
     process_button = st.button("Texte verarbeiten")
 
     if uploaded_file_source and uploaded_file_target and process_button:
@@ -70,7 +73,7 @@ with tab1:
         target_paragraphs = load_text(uploaded_file_target)
 
         if len(source_paragraphs) == len(target_paragraphs):
-            sentence_pairs = prepare_sentence_pairs(source_paragraphs, target_paragraphs, source_language, target_language)
+            sentence_pairs = prepare_sentence_pairs(source_paragraphs, target_paragraphs, source_language, target_language, min_words)
             df_sentence_pairs = pd.DataFrame(sentence_pairs, columns=['Source Text', 'Target Text'])
             st.session_state['sentence_pairs_df'] = df_sentence_pairs
             st.write('Satzpaare gefunden:', len(df_sentence_pairs))
@@ -80,6 +83,7 @@ with tab1:
         json_data = df_sentence_pairs.to_json(orient='records', lines=True, force_ascii=False)
         download_filename = f"satzpaare_{uploaded_file_target.name.split('.')[0]}.json"
         st.download_button(label="Download Satzpaare als JSON", data=json_data, file_name=download_filename, mime='application/json')
+
 
 with tab2:
     st.header("MTQE Modell Verarbeitung")
@@ -152,7 +156,7 @@ with tab2:
 
     model_choice = st.selectbox("Wähle ein Modell aus", options=list(models.keys()), key='model_choice')
 
-    if model_choice == 'openai_gpt':
+    if model_choice in ['openai_gpt', 'openai_gpt_error_detection']:
         gpt_model_version = st.selectbox(
             'Wähle die Version des OpenAI GPT-Modells aus',
             ('gpt-3.5-turbo', 'gpt-4-turbo-preview'),  # Liste der verfügbaren Modellversionen
@@ -160,12 +164,12 @@ with tab2:
         )
         source_language = st.selectbox(
             'Wähle die Quellsprache aus',
-            ('german', 'english'),  # Liste der verfügbaren Sprachen
+            ('german', 'english', 'french', 'spanish'),  # Liste der verfügbaren Sprachen
             key='source_language'
         )
         target_language = st.selectbox(
             'Wähle die Zielsprache aus',
-            ('german', 'english'),  # Liste der verfügbaren Sprachen
+            ('german', 'english', 'french', 'spanish'),  # Liste der verfügbaren Sprachen
             key='target_language'
         )
     else:
@@ -186,7 +190,8 @@ with tab2:
             progress_text = st.empty()  # Für die Prozentanzeige
 
             # Initialisiere einen leeren DataFrame
-            results_df = pd.DataFrame(columns=['File', 'Model', 'Source Text', 'Target Text', 'Score', 'Error'])
+            results_df = pd.DataFrame(columns=['File', 'Model', 'Source Text', 'Target Text', 'Score',
+                                               'Error_Detection', 'Error'])
 
             for i, pair in enumerate(st.session_state['sentence_pairs']):
                 source_text = pair['Source Text']
@@ -202,6 +207,7 @@ with tab2:
                                                       source_language=source_language,
                                                       target_language=target_language)
 
+
                 # Füge die Ergebnisse dem DataFrame hinzu
                 new_row = {
                     'File': file_name,
@@ -209,6 +215,7 @@ with tab2:
                     'Source Text': source_text,
                     'Target Text': target_text,
                     'Score': result.get('score') if result['success'] else None,
+                    'Error_Detection': result.get('error') if result['success'] else None,
                     'Error': result.get('message') if not result['success'] else None
                 }
                 new_row_df = pd.DataFrame([new_row])
@@ -371,7 +378,7 @@ with tab3:
             show_info = st.checkbox("Cluster-Informationen anzeigen", value=False)
             if show_info:
                 st.subheader("Satzlängen-Cluster-Informationen")
-                st.dataframe(cluster_info_df) 
+                st.dataframe(cluster_info_df)
 
             # Untertitel und Darstellung der Durchschnittswerte nach Satzlänge
             st.subheader("Analyse nach Satzlänge")

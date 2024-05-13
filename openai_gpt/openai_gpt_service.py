@@ -63,6 +63,68 @@ class OpenAIGPTModelStrategy:
             print(f"Error in translation quality evaluation: {e}")
             return 0  # Im Fehlerfall, gibt 0 zurück
 
+    def evaluate_translation_quality(self, source_text, target_text, gpt_model_version,
+                                     source_language="German", target_language="English"):
+        openai.api_key = self.api_key
+
+        # Initialisiere die Einführungen und Beispiele für das Modell
+        messages = [
+            {"role": "system",
+             "content": "You are a highly intelligent translation evaluation model that understands the intricacies of language, particularly in academic contexts."},
+            {"role": "system",
+             "content": "You are capable of detecting and categorizing errors in translations of academic texts based on grammatical accuracy, lexical choice, and overall fluency."},
+            {"role": "system", "content": "Here are some examples to guide you in categorizing errors:"},
+            {"role": "system",
+             "content": "Example 1: 'Die Quantenmechanik revolutionierte die Physik.' Correct translation: 'Quantum mechanics revolutionized physics.' No errors present."},
+            {"role": "system",
+             "content": "Example 2: 'Die Ergebnisse waren signifikant und unterstützten die Hypothese.' Incorrect translation: 'The findings was significant and supporting the hypothesis.' Errors: 'was' should be 'were' (Grammatical error: moderate due to agreement error); 'supporting' should be 'supported' (Grammatical error: moderate due to tense error)."},
+            {"role": "system",
+             "content": "Example 3: 'Es wird angenommen, dass das Universum expandiert.' Incorrect translation: 'It is assuming that the universe expands.' Errors: 'assuming' should be 'assumed' (Grammatical error: major due to incorrect verb form); 'expands' should be 'is expanding' (Grammatical error: minor due to tense nuance)."},
+            {"role": "system",
+             "content": "Your task is to analyze academic translations and categorize errors into severity levels: minor, moderate, or major."},
+            {"role": "system",
+             "content": "When reporting errors, please format each error as follows: 'Description of the error: Specific part of the error: Severity of the error.' Each error should be separated by a semicolon."},
+            {"role": "system",
+             "content": "Minor errors slightly affect the reading flow but do not change the overall meaning. Moderate errors affect the meaning but are still understandable. Major errors significantly distort the meaning or render the text incomprehensible."},
+            {"role": "user",
+             "content": f"Source sentence in {source_language}: '{source_text}'\nTranslated sentence in {target_language}: '{target_text}'"}
+        ]
+
+        model = gpt_model_version
+
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                max_tokens=150
+            )
+
+            # Extrahiere die Antwort vom Modell
+            answer = response['choices'][0]['message']['content']
+
+            # Definieren Sie eine Struktur, um die Fehler und deren Schweregrade zu extrahieren
+            error_analysis = {
+                "errors": []
+            }
+
+            # Modell gibt die Antwort in einem bestimmten Format aus
+            if answer != "":
+                error_list = answer.split(";")
+                for error in error_list:
+                    parts = error.strip().split(":")
+                    if len(parts) == 3:
+                        error_analysis['errors'].append({
+                            "description": parts[0].strip(),
+                            "category": parts[1].strip(),
+                            "severity": parts[2].strip()
+                        })
+                    else:
+                        return "Invalid response " + answer
+            return error_analysis
+
+        except Exception as e:
+            print(f"Error in translation quality evaluation: {e}")
+            return None  # Im Fehlerfall, gibt None zurück
 
 # Setzen Sie Ihren OpenAI API-Schlüssel hier
 api_key = os.getenv("OPENAI_API_KEY")
@@ -71,11 +133,17 @@ openai_gpt_strategy = OpenAIGPTModelStrategy(api_key)
 
 @app.post("/evaluate/")
 def evaluate(translation: TranslationInput):
-    score = openai_gpt_strategy.evaluate(translation.source_text, translation.target_text,
-                                         translation.gpt_model_version, translation.source_language,
-                                         translation.target_language)
-    return {"score": score}
+    errors = openai_gpt_strategy.evaluate(translation.source_text, translation.target_text,
+                                          translation.gpt_model_version, translation.source_language,
+                                          translation.target_language)
+    return {"error": errors}
 
+@app.post("/error_detection/")
+def evaluate(translation: TranslationInput):
+    score = openai_gpt_strategy.evaluate_translation_quality(translation.source_text, translation.target_text,
+                                                             translation.gpt_model_version, translation.source_language,
+                                                             translation.target_language)
+    return {"score": score}
 
 @app.get("/health")
 async def health_check():
