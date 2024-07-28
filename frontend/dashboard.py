@@ -159,7 +159,7 @@ with tab2:
     if model_choice in ['openai_gpt', 'openai_gpt_error_detection']:
         gpt_model_version = st.selectbox(
             'Wähle die Version des OpenAI GPT-Modells aus',
-            ('gpt-3.5-turbo', 'gpt-4-turbo-preview'),  # Liste der verfügbaren Modellversionen
+            ('gpt-3.5-turbo', 'gpt-4o'),  # Liste der verfügbaren Modellversionen
             key='gpt_model_version'
         )
         source_language = st.selectbox(
@@ -238,7 +238,7 @@ with tab2:
 
     # Ergebnisse anzeigen, wenn gewünscht und vorhanden
     if show_results and 'results_df' in st.session_state:
-        st.dataframe(st.session_state['results_df'][['Model', 'Source Text', 'Target Text', 'Score', 'Error']])
+        st.dataframe(st.session_state['results_df'][['Model', 'Source Text', 'Target Text', 'Score', 'Error_Detection', 'Error']])
 
         # Download-Button für die Ergebnisse
         output = BytesIO()
@@ -259,7 +259,7 @@ with tab3:
         exclude_extremes = st.checkbox("Extremwerte ausschließen", value=False, key='exclude_extremes')
         if exclude_extremes:
             extreme_percentile = st.slider("Prozentsatz der niedrigsten Scores, die ausgeschlossen werden sollen", min_value=0, max_value=10, value=5, step=1, key='extreme_percentile')
-        number_of_length_clusters = st.slider("Anzahl der Satzlängen-Cluster", min_value=2, max_value=10, value=4, step=1, key='length_clusters')
+        number_of_length_clusters = st.slider("Anzahl der Satzlängen-Cluster", min_value=2, max_value=10, value=5, step=1, key='length_clusters')
 
     if uploaded_files:
         all_results = []
@@ -319,8 +319,15 @@ with tab3:
                                                               aggfunc='mean').reset_index()
 
         # Bestimmung der besten Durchschnitte je Cluster und Dokument
-        best_count_per_cluster = length_cluster_scores.groupby('Length Cluster').apply(
-            lambda df: df.iloc[:, 1:].idxmax(axis=1).value_counts())
+        def determine_best_scores(df):
+            best_scores = df.iloc[:, 1:]
+            max_scores = best_scores.max(axis=1)
+            is_max = best_scores.eq(max_scores, axis=0)
+            is_unique_max = is_max.sum(axis=1) == 1
+            best_counts = is_max[is_unique_max].idxmax(axis=1).value_counts()
+            return best_counts
+
+        best_count_per_cluster = length_cluster_scores.groupby('Length Cluster').apply(determine_best_scores)
         mean_scores_per_cluster = length_cluster_df.groupby(['Length Cluster', 'Document']).agg({'Score': 'mean'})
 
         # Long to wide mean_scores_per_cluster
@@ -388,6 +395,18 @@ with tab3:
             fig = px.bar(mean_scores_per_cluster, x='Length Cluster',
                          y=[col for col in mean_scores_per_cluster.columns if col != 'Length Cluster'],
                          barmode='group', title="Average Scores by Document and Cluster")
+
+            # Anpassung der Layout-Einstellungen
+            fig.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=-0.5,
+                    xanchor="center",
+                    x=0.5
+                ),
+                yaxis_title="Score"
+            )
             st.plotly_chart(fig, use_container_width=True)
 
             # Untertitel für die Analyse der besten Scores je Cluster
@@ -400,6 +419,18 @@ with tab3:
             fig = px.bar(best_count_per_cluster, x='Length Cluster',
                          y=[col for col in best_count_per_cluster.columns if col != 'Length Cluster'],
                          barmode='group', title="Best Count per Cluster")
+
+            # Anpassung der Layout-Einstellungen
+            fig.update_layout(
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=-0.5,
+                    xanchor="center",
+                    x=0.5
+                ),
+                yaxis_title="Count"
+            )
             st.plotly_chart(fig, use_container_width=True)
 
     else:
