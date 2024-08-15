@@ -1,17 +1,21 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Load the Excel file to analyze the data
 model = "co" # co | tr
-file_path = '/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Testdaten_MTQE_result_'+model+'.xlsx'
+file_path = os.getenv('FILE_PATH').replace("{model}", model)
 data = pd.read_excel(file_path)
 
 if model == "co":
     model_long = "cometkiwi"
 elif model == "tr":
     model_long = "transquest"
-
 
 # Display the first few rows of the dataframe to understand its structure
 data.head()
@@ -25,15 +29,15 @@ plt.figure(figsize=(14, 7))
 
 # Create a barplot to visualize the score differences by groups
 sns.barplot(x='score_difference', y='Gruppe', data=data, errorbar=None, palette='viridis')
-plt.title('Differenz der ' + model_long + ' Scores zwischen guten und schlechten Übersetzungen pro Gruppe',
-          x=0.2)
+plt.title('Differenz der ' + model_long + ' Scores zwischen guten und schlechten Übersetzungen pro Gruppe', x=0.2)
 plt.xlabel('Score Differenz')
 plt.ylabel('Gruppe')
 plt.grid(True, linestyle='--', alpha=0.6)
 plt.tight_layout()
 
-# Show the plot
-plt.savefig('/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/grafiken/Scores_'+ model + '_Groups.png')
+# Save and show the plot
+plot_path_1 = os.getenv('PLOT_PATH_1').replace("{model}", model)
+plt.savefig(plot_path_1)
 plt.show()
 
 # Berechnungen für korrekt und fehlerhaft vorhergesagte Fälle
@@ -72,6 +76,7 @@ plt.grid(True, linestyle='--', alpha=0.6)
 plt.legend(loc='upper left')
 plt.tight_layout()
 
-# Das Plot als Bilddatei speichern
-plt.savefig('/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/grafiken/Prozent_korrekt_Groups_'+model+'.png')
+# Save and show the plot
+plot_path_2 = os.getenv('PLOT_PATH_2').replace("{model}", model)
+plt.savefig(plot_path_2)
 plt.show()

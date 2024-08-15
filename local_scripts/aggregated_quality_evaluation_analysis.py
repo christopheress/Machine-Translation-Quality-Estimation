@@ -1,8 +1,13 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Load the Excel file
-file_path = '/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/ergebnisse/Skript_QE_Aggregiert.xlsx'
+file_path = os.getenv('EXCEL_FILE_PATH')
 data = pd.read_excel(file_path, sheet_name='Tabelle1')
 
 # Calculate the score difference for each ID and QE model
@@ -20,8 +25,9 @@ plt.ylabel('Average Score Range')
 plt.xticks(rotation=0)
 plt.grid(axis='y')
 
-# Show the plot
-plt.savefig('/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/grafiken/Score_Range_QE_Model.png')
+# Save and show the plot
+output_plot_path = os.getenv('PLOT_OUTPUT_PATH_1')
+plt.savefig(output_plot_path)
 plt.show()
 
 # Filter the data for Cometkiwi
@@ -39,6 +45,7 @@ plt.ylabel('Average Anzahl bessere Bewertungen')
 plt.xticks(rotation=0)
 plt.grid(axis='y')
 
-# Show the plot
-plt.savefig('/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/grafiken/Anzahl_bessere_Bewertungen.png')
+# Save and show the plot
+output_plot_path_2 = os.getenv('PLOT_OUTPUT_PATH_2')
+plt.savefig(output_plot_path_2)
 plt.show()

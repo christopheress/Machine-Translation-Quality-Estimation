@@ -1,13 +1,17 @@
 import pandas as pd
 import requests
+import os
+from dotenv import load_dotenv
 from frontend.model_interface import TransQuestModel, OpenAIModel, CometKiwiModel
 
+# Load environment variables from .env file
+load_dotenv()
 
 # Definition der Modell-URLs aus Umgebungsvariablen
 model_urls = {
-    "transquest": "http://0.0.0.0:8001/evaluate/",
-    "openai_gpt": "http://0.0.0.0:8002/evaluate/",
-    "cometkiwi": "http://0.0.0.0:8003/evaluate/"
+    "transquest": os.getenv('TRANSQUEST_URL'),
+    "openai_gpt": os.getenv('OPENAI_GPT_URL'),
+    "cometkiwi": os.getenv('COMETKIWI_URL')
 }
 
 # Modelle instanziieren
@@ -18,7 +22,7 @@ models = {
 }
 
 # Excel-Datei einlesen
-data = pd.read_excel('/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Testdaten_MTQE.xlsx')
+data = pd.read_excel(os.getenv('INPUT_EXCEL_PATH'))
 
 # Funktion zum Bewerten der Übersetzungsqualität
 def evaluate_translation_quality(model, source_text, target_text, gpt_model_version=None, source_language=None, target_language=None):
@@ -71,7 +75,7 @@ def process_translation_evaluations(data, models):
 updated_data = process_translation_evaluations(data, models)
 
 # Ergebnisse in eine neue Excel-Datei speichern
-output_filename = '/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Testdaten_MTQE_result_tr.xlsx'
+output_filename = os.getenv('OUTPUT_EXCEL_PATH')
 updated_data.to_excel(output_filename, index=False)
 
 print(f'Die aktualisierte Excel-Datei wurde gespeichert: {output_filename}')

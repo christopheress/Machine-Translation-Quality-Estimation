@@ -1,14 +1,19 @@
 import pandas as pd
 import numpy as np
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Pfade der Dateien, die analysiert werden sollen
 file_paths = [
-    "/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/ergebnisse/skripte/Ergebnisse_Global Branding_Script DeepL_cometkiwi.xlsx",
-    "/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/ergebnisse/skripte/Ergebnisse_Global Branding_Script LangWeaver_cometkiwi.xlsx"
+    os.getenv('FILE_PATH_1'),
+    os.getenv('FILE_PATH_2')
     # Weitere Dateien können hier hinzugefügt werden
 ]
 
-export_path = "/Users/christopheressmann/Library/CloudStorage/OneDrive-andsafeAG/Studium/4. Masterarbeit/Test_Dokument/ergebnisse/skripte/Global Branding_analysis.xlsx"
+export_path = os.getenv('EXPORT_PATH')
 
 # Daten einlesen und Wortanzahl berechnen
 data_frames = []
@@ -99,4 +104,4 @@ with pd.ExcelWriter(export_path, engine='openpyxl') as writer:
         sheet_name = f'Comparison {cluster}'
         comparison.droplevel(0).to_excel(writer, sheet_name=sheet_name)
 
-print("Ergebnisse erfolgreich in 'translation_quality_analysis.xlsx' exportiert.")
+print("Ergebnisse erfolgreich in die Datei exportiert.")
