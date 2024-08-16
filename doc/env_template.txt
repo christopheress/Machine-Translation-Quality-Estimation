@@ -1,0 +1,36 @@
+HUGGINGFACE_TOKEN=""
+OPENAI_API_KEY=""
+
+# URLs der Modelle
+TRANSQUEST_URL="http://localhost:8001/evaluate/"
+OPENAI_GPT_URL="http://localhost:8002/evaluate/"
+COMETKIWI_URL="http://localhost:8003/evaluate/"
+
+# Pfad zur Eingabe-Excel-Datei
+INPUT_EXCEL_PATH="/path/to/your/input/Testdaten_MTQE.xlsx"
+
+# Pfad zur Ausgabe-Excel-Datei
+OUTPUT_EXCEL_PATH="/path/to/your/output/Testdaten_MTQE_result_tr.xlsx"
+
+# Pfade zu spezifischen Excel-Dateien für die Analyse
+FILE_PATH_1="/path/to/your/excel_files/Ergebnisse_Global_Branding_Script_DeepL_cometkiwi.xlsx"
+FILE_PATH_2="/path/to/your/excel_files/Ergebnisse_Global_Branding_Script_LangWeaver_cometkiwi.xlsx"
+
+# Pfad zur exportierten Analyse-Datei
+EXPORT_PATH="/path/to/your/export/Global_Branding_analysis.xlsx"
+
+# Pfad zur CSV-Datei für Literaturanalyse
+CSV_FILE_PATH="/path/to/your/csv/Finale_Literatur.csv"
+
+# Pfad zum Speichern des ersten Literaturdiagramms
+PLOT_OUTPUT_PATH_1="/path/to/your/plots/Jahre.png"
+
+# Pfad zum Speichern des zweiten Literaturdiagramms
+PLOT_OUTPUT_PATH_2="/path/to/your/plots/Publikationstypen.png"
+
+# Pfad zur Excel-Datei für Modellanalyse basierend auf dem Modellnamen
+FILE_PATH="/path/to/your/input/Testdaten_MTQE_result_{model}.xlsx"
+
+# Pfade zum Speichern von Diagrammen der Modellergebnisse basierend auf dem Modellnamen
+PLOT_PATH_1="/path/to/your/plots/Scores_{model}_Groups.png"
+PLOT_PATH_2="/path/to/your/plots/Prozent_korrekt_Groups_{model}.png"

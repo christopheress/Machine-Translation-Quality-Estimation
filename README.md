@@ -26,6 +26,14 @@ Dieses Repository enthält die Implementierung eines Systems zur Qualitätsschä
    cd <repository-folder>
 2. **Umgebungsvariablen konfigurieren**:
 Erstellen Sie eine .env-Datei im Stammverzeichnis und fügen Sie die notwendigen Umgebungsvariablen hinzu, wie in der Dokumentation beschrieben.
+Eine Vorlage für die .env-Datei befindet sich im doc-Ordner unter dem Namen env_template.txt. Kopiere diese Datei und benenne sie in .env um:
+   ```bash
+   cp doc/env_template.txt .env
+   ``` 
+Öffne die .env-Datei und passe die Pfade und API-Tokens entsprechend deinem System und deinen Anforderungen an:
+
+* Huggingface Token: Füge deinen Huggingface API-Token ein, um Zugriff auf Modelle und Ressourcen von Huggingface zu erhalten.
+* OpenAI API Token: Füge deinen OpenAI API-Token ein, um die OpenAI GPT-Modelle zu nutzen.
 
 Docker-Container starten:
 
@@ -47,3 +55,9 @@ Die lokalen Skripte im Ordner `local_scripts/` können für spezifische Analysen
 ## Dokumentation
 
 Weitere Informationen zur Nutzung, API-Dokumentation und technischen Details finden Sie im Ordner `doc/`.
+
+## Dashboard Übersicht
+
+![Vorverarbeitung](doc/frontend/preprocessing.png)
+![Scoring](doc/frontend/scoring.png)
+![Analyse](doc/frontend/analysis.png)
