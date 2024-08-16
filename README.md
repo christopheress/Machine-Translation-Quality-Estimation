@@ -48,6 +48,15 @@ Die Anwendung sollte nun unter http://localhost:8501 erreichbar sein.
 - **Frontend**: Interagieren Sie über die bereitgestellte UI.
 - **Modelle**: Die spezifischen Modelle können über die konfigurierten Endpunkte angesprochen werden, um die Übersetzungsqualität zu bewerten.
 
+## CometKiwi XL Modell
+Das CometKiwi XL Modell ist zu groß, um direkt über GIT versioniert zu werden. Daher wurde das Modell nicht im Repository gespeichert, sondern muss lokal von Huggingface heruntergeladen und implementiert werden.
+
+### Lokale Implementierung des Modells
+Um das CometKiwi XL Modell lokal zu verwenden, lade es direkt von Huggingface herunter und speichere es auf deinem lokalen System unter `cometkiwi/wmt23-cometkiwi-da-xl/`. Anschließend kannst du es in dein Projekt integrieren.
+
+### Zukünftige Verbesserungen
+In der Zukunft könnte das GIT-Repository durch GIT LFS (Large File Storage) erweitert werden, um große Dateien wie Modelle effektiv zu verwalten und versionieren zu können. Dies würde es ermöglichen, das CometKiwi XL Modell und ähnliche große Dateien direkt im Repository zu speichern und zu versionieren.
+
 ## Lokale Skripte
 
 Die lokalen Skripte im Ordner `local_scripts/` können für spezifische Analysen und Tests genutzt werden. Stellen Sie sicher, dass die benötigten Abhängigkeiten installiert sind und die Umgebungsvariablen korrekt gesetzt wurden.
